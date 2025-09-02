@@ -14,6 +14,8 @@ implementacjami dla kart SD (`SdFatFileSystem`) oraz wbudowanej pamięci flash
  * `SdFatFileSystem` – obsługa kart SD przez bibliotekę SdFat
  * `LittleFsFileSystem` – obsługa flash przez LittleFS
  * `NtpTimeProvider` i `TimeUtils` – konwersje znaczników czasu FAT
+ * `IFileSystem::rename()` – przenoszenie/zmiana nazwy w obrębie tego samego FS (tworzy katalogi rodzica, bezpieczne nadpisanie)
+ * `IFileSystem::totalBytes()` / `freeBytes()` – informacja o pojemności (bajty), przydatna do dynamicznej retencji (np. timeshift)
 
 ## Użycie jako zależność w PlatformIO
 

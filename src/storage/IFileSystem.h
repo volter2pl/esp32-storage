@@ -25,9 +25,16 @@ public:
     virtual bool listDir(const char* path, std::function<void(const char*, size_t)> callback) = 0;
     virtual bool exists(const std::string& path) = 0;
     virtual bool remove(const std::string& path) = 0;
+    // Rename/move a file or directory within the same filesystem.
+    // Implementations should attempt to be atomic when possible (e.g. FAT rename).
+    // If destination exists, it may be removed first.
+    virtual bool rename(const std::string& from, const std::string& to) = 0;
     virtual bool mkdir(const std::string& path) = 0;
     virtual uint32_t getCreatedTimestamp(const std::string& path) = 0;
     virtual uint32_t getModifiedTimestamp(const std::string& path) = 0;
+    // Capacity information (bytes). Return 0 if unsupported.
+    virtual uint64_t totalBytes() = 0;
+    virtual uint64_t freeBytes() = 0;
 
     virtual std::unique_ptr<IFile> open(const std::string& path, OpenMode mode) = 0;
 

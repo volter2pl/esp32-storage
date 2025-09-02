@@ -61,9 +61,14 @@ public:
     virtual bool listDir(const char* path, std::function<void(const char*, size_t)> callback) = 0;
     virtual bool exists(const std::string& path) = 0;
     virtual bool remove(const std::string& path) = 0;
+    // Zmiana nazwy/relokacja w obrębie systemu plików
+    virtual bool rename(const std::string& from, const std::string& to) = 0;
     virtual bool mkdir(const std::string& path) = 0;
     virtual uint32_t getCreatedTimestamp(const std::string& path) = 0;
     virtual uint32_t getModifiedTimestamp(const std::string& path) = 0;
+    // Informacje o pojemności (w bajtach). Gdy brak wsparcia — zwraca 0.
+    virtual uint64_t totalBytes() = 0;
+    virtual uint64_t freeBytes() = 0;
     virtual std::unique_ptr<IFile> open(const std::string& path, OpenMode mode) = 0;
 
     std::unique_ptr<IFile> openRead(const std::string& path);
@@ -110,7 +115,8 @@ std::unique_ptr<IFile> open(const std::string& path, OpenMode mode);
 
 ```cpp
 bool exists(const std::string& path);
-bool remove(const std::string& path);
+bool remove(const std::string& path); // idempotentnie (brak pliku -> true)
+bool rename(const std::string& from, const std::string& to); // tworzy katalogi rodzica, usuwa istniejący cel
 bool mkdir(const std::string& path);
 ```
 
@@ -129,6 +135,15 @@ uint32_t getModifiedTimestamp(const std::string& path);
 
 Zwracają czas w formacie `UNIX timestamp` (sekundy od 1970-01-01).
 
+### Pojemność
+
+```cpp
+uint64_t totalBytes();
+uint64_t freeBytes();
+```
+
+Przydatne do alokacji buforów/retencji (np. wyliczenie liczby plików timeshift). Gdy niedostępne — zwracają `0`.
+
 ---
 
 ## Uwagi
@@ -136,7 +151,8 @@ Zwracają czas w formacie `UNIX timestamp` (sekundy od 1970-01-01).
 * Brak zegara RTC nie przeszkadza w użyciu dat jeśli dostarczony zostanie `ITimeProvider` (np. z NTP).
 * Pliki można trzymać otwarte (uchwyt `IFile`), co umożliwia wydajny zapis strumieniowy.
 * System może działać bez dat, ale wtedy metody timestamp zwracają `0`.
-* `LittleFsFileSystem` nie obsługuje znaczników czasu i zawsze zwraca `0`.
+* `LittleFsFileSystem` nie obsługuje znaczników czasu i zawsze zwraca `0` dla timestampów.
+* `remove()` w LittleFS również jest idempotentne (brak pliku = sukces).
 
 ## Planowane rozszerzenia
 

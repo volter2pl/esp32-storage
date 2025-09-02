@@ -161,9 +161,9 @@ bool LittleFsFileSystem::remove(const std::string& rawPath) {
     DBG("LittleFsFileSystem::remove(path=%s)", path.c_str());
     if (path.empty()) return false;
 
-    if (!LittleFS.exists(path.c_str())) { // unikamy open("r") na nieistniejących ścieżkach
-        DBG("LittleFsFileSystem::remove target not exists: %s", path.c_str());
-        return false;
+    if (!LittleFS.exists(path.c_str())) { // idempotent: brak celu traktujemy jako sukces
+        DBG("LittleFsFileSystem::remove target not exists: %s (noop)", path.c_str());
+        return true;
     }
 
     bool res;
@@ -174,6 +174,25 @@ bool LittleFsFileSystem::remove(const std::string& rawPath) {
     }
     DBG("LittleFsFileSystem::remove result=%d", res);
     return res;
+}
+
+bool LittleFsFileSystem::rename(const std::string& rawFrom, const std::string& rawTo) {
+    std::string from = normalizePath(rawFrom);
+    std::string to = normalizePath(rawTo);
+    DBG("LittleFsFileSystem::rename(from=%s, to=%s)", from.c_str(), to.c_str());
+    if (from.empty() || to.empty()) return false;
+
+    // Ensure destination parent exists
+    (void)ensureParentDirs(LittleFS, to);
+
+    // Some FS variants fail if destination exists; remove first to be safe
+    if (LittleFS.exists(to.c_str())) {
+        (void)LittleFS.remove(to.c_str());
+    }
+
+    bool ok = LittleFS.rename(from.c_str(), to.c_str());
+    DBG("LittleFsFileSystem::rename result=%d", ok);
+    return ok;
 }
 
 bool LittleFsFileSystem::mkdir(const std::string& rawPath) {
@@ -218,6 +237,18 @@ std::unique_ptr<IFile> LittleFsFileSystem::open(const std::string& rawPath, Open
     DBG("open(%s) result=%d", path.c_str(), f ? 1 : 0);
     if (!f) return nullptr;
     return std::make_unique<LittleFsFileWrapper>(std::move(f));
+}
+
+uint64_t LittleFsFileSystem::totalBytes() {
+    // ESP32 LittleFS exposes total/used bytes
+    return LittleFS.totalBytes();
+}
+
+uint64_t LittleFsFileSystem::freeBytes() {
+    auto total = LittleFS.totalBytes();
+    auto used = LittleFS.usedBytes();
+    if (total < used) return 0;
+    return total - used;
 }
 
 } // namespace littlefs

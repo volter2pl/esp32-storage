@@ -205,6 +205,31 @@ bool SdFatFileSystem::remove(const std::string& rawPath) {
     return res;
 }
 
+bool SdFatFileSystem::rename(const std::string& rawFrom, const std::string& rawTo) {
+    std::string from = normalizePath(rawFrom);
+    std::string to = normalizePath(rawTo);
+    DBG("SdFatFileSystem::rename(from=%s, to=%s)", from.c_str(), to.c_str());
+    if (from.empty() || to.empty()) return false;
+
+    // Ensure destination parent exists
+    if (!ensureParentDirs(sd, to)) {
+        DBG("rename: ensureParentDirs failed for %s", to.c_str());
+        return false;
+    }
+
+    // SdFat cannot overwrite existing targets; remove if present
+    if (sd.exists(to.c_str())) {
+        if (!remove(to)) {
+            DBG("rename: failed to remove existing %s", to.c_str());
+            return false;
+        }
+    }
+
+    bool ok = sd.rename(from.c_str(), to.c_str());
+    DBG("SdFatFileSystem::rename result=%d", ok);
+    return ok;
+}
+
 bool SdFatFileSystem::mkdir(const std::string& rawPath) {
     std::string path = normalizePath(rawPath);
     DBG("SdFatFileSystem::mkdir(path=%s)", path.c_str());
@@ -271,6 +296,22 @@ std::unique_ptr<IFile> SdFatFileSystem::open(const std::string& rawPath, OpenMod
     DBG("open(%s) result=%d", path.c_str(), raw ? 1 : 0);
     if (!raw) return nullptr;
     return std::make_unique<SdFatFileWrapper>(std::move(raw));
+}
+
+uint64_t SdFatFileSystem::totalBytes() {
+    auto* v = sd.vol();
+    if (!v) return 0;
+    uint64_t clusters = v->clusterCount();
+    uint64_t sectorsPerCluster = v->sectorsPerCluster();
+    return clusters * sectorsPerCluster * 512ULL;
+}
+
+uint64_t SdFatFileSystem::freeBytes() {
+    auto* v = sd.vol();
+    if (!v) return 0;
+    uint64_t freeClusters = v->freeClusterCount();
+    uint64_t sectorsPerCluster = v->sectorsPerCluster();
+    return freeClusters * sectorsPerCluster * 512ULL;
 }
 
 } // namespace sd

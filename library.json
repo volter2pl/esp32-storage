@@ -1,6 +1,6 @@
 {
   "name": "esp32-storage",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Storage abstraction utilities for ESP32 based on SdFat and NTP time provider.",
   "authors": [
     {

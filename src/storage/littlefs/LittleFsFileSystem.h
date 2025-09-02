@@ -19,9 +19,12 @@ public:
     bool listDir(const char* path, std::function<void(const char*, size_t)> callback) override;
     bool exists(const std::string& path) override;
     bool remove(const std::string& path) override;
+    bool rename(const std::string& from, const std::string& to) override;
     bool mkdir(const std::string& path) override;
     uint32_t getCreatedTimestamp(const std::string& path) override;
     uint32_t getModifiedTimestamp(const std::string& path) override;
+    uint64_t totalBytes() override;
+    uint64_t freeBytes() override;
 
     std::unique_ptr<IFile> open(const std::string& path, OpenMode mode) override;
 };
